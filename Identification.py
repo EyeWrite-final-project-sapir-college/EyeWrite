@@ -9,25 +9,17 @@ face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_fronta
 eye_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
 
 
-def not_significant_height_change(previous, current, threshold):
-    prev_y, prev_h = previous[1],previous[3]
-    curr_y, curr_h = current[1], current[3]
-
-    # Compute absolute percentage change
-    change_y = abs(curr_y - prev_y) / max(prev_h, 1)  # Normalize by height
-    change_h = abs(curr_h - prev_h) / max(prev_h, 1)
-
-    return change_h>threshold and change_y>threshold
-
-def not_significant_width_change(previous, current, threshold):
-    prev_x, prev_w = previous[0],previous[2]
-    curr_x, curr_w = current[0], current[2]
+def not_significant_change(previous, current, threshold):
+    prev_x, prev_y, prev_w, prev_h = previous
+    curr_x, curr_y, curr_w, curr_h = current
 
     # Compute absolute percentage change
     change_x = abs(curr_x - prev_x) / max(prev_w, 1)  # Normalize by width
+    change_y = abs(curr_y - prev_y) / max(prev_h, 1)  # Normalize by height
     change_w = abs(curr_w - prev_w) / max(prev_w, 1)
+    change_h = abs(curr_h - prev_h) / max(prev_h, 1)
 
-    return change_x>threshold and change_w>threshold
+    return all(value < threshold for value in [change_x, change_y, change_w, change_h])
 
 # function before change
 def identifyAndCalcEyeLocation (previous_eye_position, previous_face_position):
