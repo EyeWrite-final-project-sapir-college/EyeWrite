@@ -1,46 +1,36 @@
 import sys
 import threading
-
+import mediapipe  # must be before PyQt6
 from PyQt6.QtWidgets import QApplication
-
+import Calibration
 import Identification as Identify
 import cv2
-import numpy as np
-import time
-import multiprocessing
-
 import Keyboard
 
 width, height = 1800, 900
 
-previous_eye_position = None
-previous_face_position = None
+center_ratio_width, centerToLeftOrRight = Calibration.calibrate(width, height)
 
 app = QApplication(sys.argv)
-window = Keyboard.KeyboardApp()
+window = Keyboard.KeyboardApp(width, height)
 window.show()
 
 def runKeyboard ():
     sys.exit(app.exec())
-
 keyboard_process = threading.Thread(target=runKeyboard)
 keyboard_process.start()
 
 while True:
-    time.sleep(0.1)
-
-    pupilCenter,previous_eye_position,previous_face_position ,frame = Identify.identifyAndCalcEyeLocation(previous_eye_position, previous_face_position)
-
+    frame, irisCenter, _, _, _, rectangle = Identify.identify(width, height, center_ratio_width, centerToLeftOrRight)
     # Show the frame with detections
     cv2.imshow('Eye Detection', frame)
     cv2.waitKey(1)
+    print(irisCenter)
 
-
-    if(len(pupilCenter) != 0):
-        w_factor = width / previous_eye_position[0][2]
-        h_factor = height / previous_eye_position[0][3]
-        center = (int((pupilCenter[0][0])*w_factor), int((pupilCenter[0][1])*h_factor))
-        print(center)
+    if(len(irisCenter) != 0 and len(rectangle)==4):
+        w_factor = width / rectangle[2]
+        h_factor = height / rectangle[3]
+        center = (int((irisCenter[0]-rectangle[0])*w_factor), int((irisCenter[1]-rectangle[1])*h_factor))
         window.update_cursor_position(center)
 
 # Release the camera and close windows

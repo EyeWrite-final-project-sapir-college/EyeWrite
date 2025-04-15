@@ -1,108 +1,130 @@
 import cv2
-import numpy as np
-
-# Open web camera
-cam = cv2.VideoCapture(0)
-
-# Load pre-trained classifiers for face and eye detection
-face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-eye_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
+import mediapipe as mp
 
 
-def not_significant_change(previous, current, threshold):
-    prev_x, prev_y, prev_w, prev_h = previous
-    curr_x, curr_y, curr_w, curr_h = current
-
-    # Compute absolute percentage change
-    change_x = abs(curr_x - prev_x) / max(prev_w, 1)  # Normalize by width
-    change_y = abs(curr_y - prev_y) / max(prev_h, 1)  # Normalize by height
-    change_w = abs(curr_w - prev_w) / max(prev_w, 1)
-    change_h = abs(curr_h - prev_h) / max(prev_h, 1)
-
-    return all(value < threshold for value in [change_x, change_y, change_w, change_h])
-
-# function before change
-def identifyAndCalcEyeLocation (previous_eye_position, previous_face_position):
-    pupilCenter = []
-    eyesRectangle = []
-    faceRectangle = []
-    ret, frame = cam.read()
-    if not ret:
-        print("Failed to capture frame")
-        return None, None, None, None
-
-    # Convert the frame to grayscale (Haar cascades work better with grayscale)
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-    # Detect faces in the frame
-    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
-
-    for (x, y, w, h) in faces:
-        # Adjust rectangle dimensions
-        h_shrink_factor = 0.5  # Reduce the size by 70%
-        w_shrink_factor = 0.5
-        temp_h = h
-        temp_w = w
-        h = int(h * h_shrink_factor)
-        w = int(w * w_shrink_factor)
-        y = y + (temp_h - h)//2# Center vertically
-        x = x + (temp_w - w)
-
-        if previous_face_position != None and previous_face_position != [] and not_significant_change(previous_face_position[0], (x, y, w, h), 0.03):
-            x, y, w, h = previous_face_position[0]
-
-        faceRectangle.append((x,y,w,h))
-
-        # Draw rectangle around each detected face
-        cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-
-        # Region of interest for eyes within the face
-        roi_gray = gray[y:y + h, x:x + w]
-        roi_color = frame[y:y + h, x:x + w]
-
-        # Detect eyes within the face region
-        eyes = eye_cascade.detectMultiScale(roi_gray, scaleFactor=1.1, minNeighbors=10, minSize=(15, 15))
-
-        for (ex, ey, ew, eh) in eyes:
+mp_drawing = mp.solutions.drawing_utils
+mp_drawing_styles = mp.solutions.drawing_styles
 
 
-            # Adjust identify rectangle dimensions
-            h_shrink_factor = 0.5  # Reduce the size by 50%
-            w_shrink_factor = 0.7  # Reduce the size by 30%
-            temp_ew = ew
-            temp_eh = eh
-            ew = int(ew * w_shrink_factor)
-            eh = int(eh * h_shrink_factor)
-            ex = ex + (temp_ew - ew) // 2  # Center horizontally
-            ey = ey + (temp_eh - eh) // 2  # Center vertically
+mp_face_mesh = mp.solutions.face_mesh
+face_mesh = mp.solutions.face_mesh.FaceMesh(
+        max_num_faces=1,
+        refine_landmarks=True,
+        min_detection_confidence=0.5,
+        min_tracking_confidence=0.5
+    )
+cap = cv2.VideoCapture(0)
 
-            if previous_eye_position != None and previous_eye_position != [] and not_significant_change(previous_eye_position[0], (ex, ey, ew, eh), 0.2):
-                ex,ey,ew,eh = previous_eye_position[0]
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+def identify (width, height, rectangle_center_ratio=None,identifyLengthFactor = None):
 
-            eyesRectangle.append((ex, ey, ew, eh))
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        cv2.flip(frame, 1, frame)
+        results = face_mesh.process(frame)
+        if not results.multi_face_landmarks:
+            continue
+
+        for face_landmarks in results.multi_face_landmarks:
+            mp_drawing.draw_landmarks(
+                image=frame,
+                landmark_list=face_landmarks,
+                connections=mp_face_mesh.FACEMESH_FACE_OVAL,
+                landmark_drawing_spec=None,
+                connection_drawing_spec=mp_drawing_styles.get_default_face_mesh_tesselation_style()
+            )
+            face = list(mp_face_mesh.FACEMESH_FACE_OVAL)
+            downDot = face_landmarks.landmark[face[6][0]]
+            upDot = face_landmarks.landmark[face[11][0]]
+            leftDot = face_landmarks.landmark[face[32][0]]
+            rightDot = face_landmarks.landmark[face[22][0]]
+            face_down = (int(downDot.x * frame.shape[1]), int(downDot.y * frame.shape[0]))
+            face_up = (int(upDot.x * frame.shape[1]), int(upDot.y * frame.shape[0]))
+            face_left = (int(leftDot.x * frame.shape[1]), int(leftDot.y * frame.shape[0]))
+            face_right = (int(rightDot.x * frame.shape[1]), int(rightDot.y * frame.shape[0]))
+            cv2.circle(frame, face_down, 2, (255, 0, 0), -1)
+            cv2.circle(frame, face_up, 2, (255, 0, 0), -1)
+            cv2.circle(frame, face_left, 2, (255, 0, 0), -1)
+            cv2.circle(frame, face_right, 2, (255, 0, 0), -1)
 
 
-            # Draw identify rectangle around each detected eye
-            cv2.rectangle(roi_color, (ex, ey), (ex + ew, ey + eh), (0, 255, 0), 2)
+            mp_drawing.draw_landmarks(
+                image=frame,
+                landmark_list=face_landmarks,
+                connections=mp_face_mesh.FACEMESH_LEFT_EYE,
+                landmark_drawing_spec=None,
+                connection_drawing_spec=mp_drawing_styles.get_default_face_mesh_tesselation_style()
+            )
+            eye = list(mp_face_mesh.FACEMESH_LEFT_EYE)
+            downDot = face_landmarks.landmark[eye[0][0]]
+            upDot = face_landmarks.landmark[eye[10][0]]
+            rightDot = face_landmarks.landmark[eye[5][0]]
+            leftDot = face_landmarks.landmark[eye[15][1]]
+            eye_down = (int(downDot.x * frame.shape[1]), int(downDot.y * frame.shape[0]))
+            eye_up = (int(upDot.x * frame.shape[1]), int(upDot.y * frame.shape[0]))
+            eye_left = (int(leftDot.x * frame.shape[1]), int(leftDot.y * frame.shape[0]))
+            eye_right = (int(rightDot.x * frame.shape[1]), int(rightDot.y * frame.shape[0]))
+            cv2.circle(frame, eye_down, 2, (255, 0, 0), -1)
+            cv2.circle(frame, eye_up, 2, (255, 0, 0), -1)
+            cv2.circle(frame, eye_left, 2, (255, 0, 0), -1)
+            cv2.circle(frame, eye_right, 2, (255, 0, 0), -1)
 
-            # Region of interest for the eye
-            eye_gray = roi_gray[ey:ey + eh, ex:ex + ew]
-            eye_color = roi_color[ey:ey + eh, ex:ex + ew]
+
+            mp_drawing.draw_landmarks(
+                image=frame,
+                landmark_list=face_landmarks,
+                connections=mp_face_mesh.FACEMESH_LEFT_EYEBROW,
+                landmark_drawing_spec=None,
+                connection_drawing_spec=mp_drawing_styles.get_default_face_mesh_tesselation_style()
+            )
+            eyeBrow = list(mp_face_mesh.FACEMESH_LEFT_EYEBROW)
+            downDot = face_landmarks.landmark[eyeBrow[5][0]]
+            upDot = face_landmarks.landmark[eyeBrow[0][0]]
+            eyeBrow_down = (int(downDot.x * frame.shape[1]), int(downDot.y * frame.shape[0]))
+            eyeBrow_up = (int(upDot.x * frame.shape[1]), int(upDot.y * frame.shape[0]))
+            cv2.circle(frame, eyeBrow_down, 2, (255, 0, 0), -1)
+            cv2.circle(frame, eyeBrow_up, 2, (255, 0, 0), -1)
 
 
-            inv = cv2.bitwise_not(eye_color)
-            thresh = cv2.cvtColor(inv, cv2.COLOR_BGR2GRAY)
-            kernel = np.ones((2, 2), np.uint8)
-            erosion = cv2.erode(thresh, kernel, iterations=1)
-            ret, thresh1 = cv2.threshold(erosion, 220, 255, cv2.THRESH_BINARY)
-            cnts, hierarchy = cv2.findContours(thresh1, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            if len(cnts) != 0:
-                c = max(cnts, key=cv2.contourArea)
-                (x, y), radius = cv2.minEnclosingCircle(c)
-                center = (int(x), int(y))
-                pupilCenter.append(center)
-                radius = int(radius)
-                cv2.circle(eye_color, center, radius, (255, 0, 0), 2)
-                cv2.circle(eye_color, center, 2, (0, 0, 255), -1)  # Mark center
 
-    return pupilCenter, eyesRectangle, faceRectangle, frame
+            mp_drawing.draw_landmarks(
+                image=frame,
+                landmark_list=face_landmarks,
+                connections=mp_face_mesh.FACEMESH_LEFT_IRIS,
+                landmark_drawing_spec=None,
+                connection_drawing_spec=mp_drawing_styles.get_default_face_mesh_tesselation_style()
+            )
+            iris = list(mp_face_mesh.FACEMESH_LEFT_IRIS)
+            leftDot = face_landmarks.landmark[iris[0][0]]
+            rightDot = face_landmarks.landmark[iris[3][0]]
+            left_x, left_y = int(leftDot.x * frame.shape[1]), int(leftDot.y * frame.shape[0])
+            right_x, right_y = int(rightDot.x * frame.shape[1]), int(rightDot.y * frame.shape[0])
+            irisCenter = (int((right_x + left_x) / 2), int((right_y+left_y)/2))
+            cv2.circle(frame, irisCenter, 2, (0, 0, 255), -1)
+
+            rectangle = []
+            if(rectangle_center_ratio!=None and identifyLengthFactor!=None):
+                x_center = int(eye_left[0] + (eye_right[0] - eye_left[0]) * rectangle_center_ratio[0])
+                y_center = int(eye_left[1] - (eyeBrow_down[1] - eyeBrow_up[1]) * rectangle_center_ratio[1])
+                cv2.circle(frame, (x_center,y_center), 2, (0, 255, 0), -1)
+
+                w = int(identifyLengthFactor*(eye_right[0] - eye_left[0]))
+                h = int(w*(height/width))
+                x = x_center-int(w/2)
+                y = y_center-int(h/2)
+                rectangle = [x,y,w,h]
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 1)
+
+
+
+        return frame, irisCenter, [face_up, face_down, face_left, face_right], [eye_up, eye_down,eye_left, eye_right], [eyeBrow_up,eyeBrow_down], rectangle
+
+if "__main__" == __name__:
+    while True:
+        frame, irisCenter,_,_,_,_ = identify(1800,900)
+        cv2.imshow('frame', frame)
+        cv2.waitKey(1)

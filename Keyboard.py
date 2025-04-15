@@ -5,11 +5,11 @@ import KeyboardHoverButton as HoverButton
 import pyautogui
 
 class KeyboardApp(QWidget):
-    def __init__(self):
+    def __init__(self, width, height):
         super().__init__()
 
         self.setWindowTitle("Main Screen")
-        self.resize(1800, 900)
+        self.resize(width, height)
 
         # Create a text box for output
         self.text_box = QTextEdit(self)
