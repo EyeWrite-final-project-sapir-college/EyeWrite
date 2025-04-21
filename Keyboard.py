@@ -159,6 +159,5 @@ class KeyboardApp(QWidget):
 
     def update_cursor_position(self, center):
         """Move the cursor to a given position"""
-        print(True)
         if len(center) == 2:
             pyautogui.moveTo(center[0], center[1])
