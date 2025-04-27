@@ -9,23 +9,11 @@ class KeyboardHoverButton(QPushButton):
         self.timer = QTimer(self)
         self.timer.setSingleShot(True)
         self.timer.timeout.connect(self.click)  # Connect timeout to click event
-        self.hovered = False
 
     def enterEvent(self, event):
         """Start timer when mouse enters"""
-        self.hovered = True
         self.timer.start(1000)  # 1 seconds delay
-        self.update()
+
 
     def leaveEvent(self, event):
-        """Stop timer when mouse leaves"""
-        self.hovered = False
         self.timer.stop()
-        self.update()
-
-    def paintEvent(self, event):
-        """Custom painting to change background color when hovered"""
-        painter = QPainter(self)
-        if self.hovered:
-            painter.fillRect(self.rect(), QColor(102, 178, 255))  # Light blue background
-        super().paintEvent(event)  # Default button painting

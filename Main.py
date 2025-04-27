@@ -9,7 +9,7 @@ import Calibration
 
 width, height = 1800, 900
 
-center_ratio_width, centerToLeftOrRight = Calibration.calibrate(width, height)
+center_ratio_width,identifyLengthFactor,ratio_z_left, ratio_z_right, face_initial_z = Calibration.calibrate(width, height)
 
 app = QApplication(sys.argv)
 window = Keyboard.KeyboardApp(width, height)
@@ -21,9 +21,10 @@ keyboard_process = threading.Thread(target=runKeyboard)
 keyboard_process.start()
 
 while True:
-    frame, irisCenter, _, _, _, rectangle = Identify.identify(width, height, center_ratio_width, centerToLeftOrRight)
+    frame, eye_frame, irisCenter, _, _, _, _, rectangle = Identify.identify(False,width, height, center_ratio_width,identifyLengthFactor,ratio_z_left, ratio_z_right, face_initial_z)
     # Show the frame with detections
     cv2.imshow('Eye Detection', frame)
+    cv2.imshow('eye_frame', eye_frame)
     cv2.waitKey(1)
 
 
