@@ -1,16 +1,18 @@
 import sys
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QTextEdit, QGridLayout, QHBoxLayout
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QTextEdit, QGridLayout, QHBoxLayout, QLabel
 from PyQt6.QtCore import Qt
 import KeyboardHoverButton as HoverButton
 import pyautogui
 import pygame
 
+
+pyautogui.FAILSAFE = False
 class KeyboardApp(QWidget):
     def __init__(self, width, height):
         super().__init__()
 
         pygame.mixer.init()
-        self.click_sound = pygame.mixer.Sound("click.mp3")
+        self.click_sound = pygame.mixer.Sound("audio/Click.mp3")
 
         self.setWindowTitle("Main Screen")
         self.resize(width, height)
@@ -31,6 +33,16 @@ class KeyboardApp(QWidget):
         self.keyboard_first_page()
 
         self.setLayout(layout)
+
+        self.message_label = QLabel('', self)
+        self.message_label.setStyleSheet("""
+                   color: black;
+                   font-size: 40px;
+                   font-weight: bold;
+                   background-color: rgba(255, 255, 255, 180); /* white with slight transparency */
+               """)
+        self.message_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.message_label.hide()
 
     def clear_layout(self, layout):  # as long as there are items in the layout - keep deleting
         while layout.count():
@@ -197,4 +209,20 @@ class KeyboardApp(QWidget):
     def update_cursor_position(self, center):
         """Move the cursor to a given position"""
         if len(center) == 2:
-            pyautogui.moveTo(center[0], center[1])
+            x, y = center
+            if x <= 0 or y <= 0 or x >= self.width() or y >= self.height():
+                self.show_message("Out of range. Look at the screen to continue.")
+                print(False)
+            else:
+                print (True)
+                self.hide_message()
+                pyautogui.moveTo(x, y)
+
+    def show_message(self, text):
+        self.message_label.setText(text)
+        self.message_label.resize(self.width(), self.height())  # Full width, Full height
+        self.message_label.move(0, 0)  # Center vertically
+        self.message_label.show()
+
+    def hide_message(self):
+        self.message_label.hide()

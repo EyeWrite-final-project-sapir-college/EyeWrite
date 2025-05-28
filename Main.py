@@ -1,18 +1,20 @@
 import sys
 import threading
 import mediapipe  # must be before PyQt6
+import numpy as np
 from PyQt6.QtWidgets import QApplication
-import Identification as Identify
-import cv2
-import Keyboard
+import Identification
 import Calibration
+import cv2
+import demo
 
-width, height = 1800, 900
+width, height = 1900, 1000
 
-center_ratio_width,identifyLengthFactor,ratio_z_left, ratio_z_right, face_initial_z = Calibration.calibrate(width, height)
+object_points, relative_iris_center, initial_rvec, previous_iris_center, previous_eye_point_center,screen = Calibration.calibrate(width, height)
 
 app = QApplication(sys.argv)
-window = Keyboard.KeyboardApp(width, height)
+# window = Keyboard.KeyboardApp(width, height)
+window = demo.Ten_buttons(width, height)
 window.show()
 
 def runKeyboard ():
@@ -21,21 +23,32 @@ keyboard_process = threading.Thread(target=runKeyboard)
 keyboard_process.start()
 
 while True:
-    frame, eye_frame, irisCenter, _, _, _, _, rectangle = Identify.identify(False,width, height, center_ratio_width,identifyLengthFactor,ratio_z_left, ratio_z_right, face_initial_z)
+    frame, eye_frame, _, _, _, previous_iris_center, previous_eye_point_center, rectangle = Identification.identify(False, False, object_points, relative_iris_center, initial_rvec, previous_iris_center, previous_eye_point_center,screen)
     # Show the frame with detections
     cv2.imshow('Eye Detection', frame)
     cv2.imshow('eye_frame', eye_frame)
     cv2.waitKey(1)
 
-
-    if(len(irisCenter) != 0 and len(rectangle)==4):
-        w_factor = width / rectangle[2]
-        h_factor = height / rectangle[3]
-        center = (int((irisCenter[0]-rectangle[0])*w_factor), int((irisCenter[1]-rectangle[1])*h_factor))
-        if(center[0] < 1 or center[0] > width or center[1] < 1 or center[1] > height):
-            print("off screen")
-            center = (1,1)
+    if (len(previous_iris_center) != 0 and len(rectangle) == 4):
+        src = np.float32([
+            [rectangle[0][0], rectangle[0][1]],
+            [rectangle[1][0], rectangle[1][1]],
+            [rectangle[2][0], rectangle[2][1]],
+            [rectangle[3][0], rectangle[3][1]]
+        ])
+        dst = np.float32([
+            [0, 0],
+            [width, 0],
+            [width, height],
+            [0, height]
+        ])
+        matrix = cv2.getPerspectiveTransform(src, dst)
+        point = np.float32([[[previous_iris_center[0] - previous_eye_point_center[0],previous_iris_center[1] - previous_eye_point_center[1]]]])
+        transformed_point = cv2.perspectiveTransform(point, matrix)
+        center =(int(transformed_point[0][0][0]), int(transformed_point[0][0][1]))
         window.update_cursor_position(center)
+
+
 
 # Release the camera and close windows
 cam.release()

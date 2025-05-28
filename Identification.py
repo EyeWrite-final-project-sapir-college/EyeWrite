@@ -1,11 +1,8 @@
 import cv2
 import mediapipe as mp
+import numpy as np
 
 #################### initial mediapipe and identification variables ####################
-
-# mediapipe
-mp_drawing = mp.solutions.drawing_utils
-mp_drawing_styles = mp.solutions.drawing_styles
 
 mp_face_mesh = mp.solutions.face_mesh
 face_mesh = mp.solutions.face_mesh.FaceMesh(
@@ -15,62 +12,60 @@ face_mesh = mp.solutions.face_mesh.FaceMesh(
         min_tracking_confidence=0.5
     )
 
-# previous identification
-previous_points = [[None,None,None,None], #face
-                   [None,None,None,None], #left_eye
-                   [None,None]] # eyeBrow
-
-previous_iris = [None]
-previous_relative_iris_center = [None]
-
 # change factors
-factor = 3
-relative_iris_center_factor = 0
-iris_factor = 1
+factor = 0
 
 # initial camera
 cap = cv2.VideoCapture(0)
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+w, h = 3840, 2160
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, w)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, h)
 
+# camera matrix
+focal_length = w
+camera_matrix = np.array([
+    [focal_length, 0, w / 2],
+    [0, focal_length, w / 2],
+    [0, 0, 1]
+], dtype=np.float32)
+
+# camera distortion
+dist_coeffs = np.zeros((4, 1))
+
+distance_head_screen = 5000
 
 #################### main functions ####################
+def initialVariable (image_points, image_points_z):
+    # 3D points relative to the nose
+    object_points = np.array([
+        [0.0, 0.0, 0.0],  # Nose tip
+        [image_points[1][0] - image_points[0][0], image_points[1][1] - image_points[0][1], image_points_z[1]-image_points_z[0]],  # Right eye inner
+        [image_points[2][0] - image_points[0][0], image_points[2][1] - image_points[0][1], image_points_z[2]-image_points_z[0]],  # Left eye inner
+        [image_points[3][0] - image_points[0][0], image_points[3][1] - image_points[0][1], image_points_z[3]-image_points_z[0]],  # right eyeBrow outer
+        [image_points[4][0] - image_points[0][0], image_points[4][1] - image_points[0][1], image_points_z[4]-image_points_z[0]],  # right eyeBrow outer
+        [image_points[5][0] - image_points[0][0], image_points[5][1] - image_points[0][1], image_points_z[5]-image_points_z[0]],  # nose tip
+        [image_points[6][0] - image_points[0][0], image_points[6][1] - image_points[0][1], image_points_z[6] - image_points_z[0]],  # right eyeBrow middle
+        [image_points[7][0] - image_points[0][0], image_points[7][1] - image_points[0][1], image_points_z[7] - image_points_z[0]]  # right eyeBrow middle
 
-def smoothEyeDetection (new_point, exist_point, alpha):
+    ], dtype=np.float32)
+    return object_points
+
+
+def smoothEyeDetection (new_point, exist_point, initialization_flag, alpha):
+    if exist_point == None:
+        return new_point
+
+    # smoothing factor
+    if initialization_flag:
+        alpha = 1
+
     x = int(alpha * new_point[0] + (1 - alpha) * exist_point[0])
     y = int(alpha * new_point[1] + (1 - alpha) * exist_point[1])
     return (x,y)
 
 
-# Check if a significant change occurred that justifies updating the identification
-def checkPreviousPointsChange (points, location, factor, alpha):
-    for i in range(0,len(points)):
-        if previous_points[location][i] == None:
-            previous_points[location][i] = points[i]
-
-        prev_x, prev_y = previous_points[location][i]
-
-        if abs(points[i][0] - prev_x) > factor or abs(points[i][1] - prev_y) > factor:
-            previous_points[location][i] = smoothEyeDetection(points[i], (prev_x,prev_y), alpha)
-
-
-def checkPointChange (new_point, exist_point, factor, alpha):
-    if (exist_point[0] == None):
-        exist_point[0] = new_point[0]
-    elif (abs(new_point[0][0] - exist_point[0][0]) > factor or abs(new_point[0][1] - exist_point[0][1]) > factor):
-        exist_point[0] = smoothEyeDetection(new_point[0], exist_point[0], alpha)
-
-
 # identify features from image by mediapipe
-def identify (initialization_flag ,width, height, center_ratio_width = None,identifyLengthFactor = None,ratio_z_left = None, ratio_z_right = None, face_initial_z = None):
-    # smoothing factor
-    if initialization_flag:
-        alpha = 1
-        iris_alpha = 1
-    else:
-        alpha = 0.6
-        iris_alpha = 0.6
-
+def identify (center_initialization_flag, initialization_flag, object_points = None, relative_iris_center = None, initial_rvec = None, previous_iris_center = None, previous_eye_point_center = None , screen = None):
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
@@ -78,7 +73,7 @@ def identify (initialization_flag ,width, height, center_ratio_width = None,iden
 
         cv2.flip(frame, 1, frame)
         # resize image to 4k for getting more pixels in the eye section
-        frame = cv2.resize(frame,(3840,2160), interpolation=cv2.INTER_LINEAR)
+        frame = cv2.resize(frame,(3840, 2160), interpolation=cv2.INTER_LINEAR)
         results = face_mesh.process(frame)
         if not results.multi_face_landmarks:
             print("can't identify face")
@@ -86,87 +81,111 @@ def identify (initialization_flag ,width, height, center_ratio_width = None,iden
 
         # identify features
         for face_landmarks in results.multi_face_landmarks:
-            face = list(mp_face_mesh.FACEMESH_FACE_OVAL)
-            up_dot = face_landmarks.landmark[face[11][0]]
-            down_dot = face_landmarks.landmark[face[6][0]]
-            left_dot = face_landmarks.landmark[face[32][0]]
-            right_dot = face_landmarks.landmark[face[22][0]]
-            face_up = (int(up_dot.x * frame.shape[1]), int(up_dot.y * frame.shape[0]))
-            face_down = (int(down_dot.x * frame.shape[1]), int(down_dot.y * frame.shape[0]))
-            face_left = (int(left_dot.x * frame.shape[1]), int(left_dot.y * frame.shape[0]))
-            face_right = (int(right_dot.x * frame.shape[1]), int(right_dot.y * frame.shape[0]))
-            face_left_right_z = (left_dot.z, right_dot.z)
-            checkPreviousPointsChange([face_up, face_down, face_left, face_right], 0, factor, alpha)
-
-            eye = list(mp_face_mesh.FACEMESH_LEFT_EYE)
-            up_dot = face_landmarks.landmark[eye[10][0]]
-            down_dot = face_landmarks.landmark[eye[0][0]]
-            left_dot = face_landmarks.landmark[eye[15][1]]
-            right_dot = face_landmarks.landmark[eye[5][0]]
-            eye_up = (int(up_dot.x * frame.shape[1]), int(up_dot.y * frame.shape[0]))
-            eye_down = (int(down_dot.x * frame.shape[1]), int(down_dot.y * frame.shape[0]))
-            eye_left = (int(left_dot.x * frame.shape[1]), int(left_dot.y * frame.shape[0]))
-            eye_right = (int(right_dot.x * frame.shape[1]), int(right_dot.y * frame.shape[0]))
-            checkPreviousPointsChange([eye_up, eye_down, eye_left, eye_right], 1, factor, alpha)
-
-            eyeBrow = list(mp_face_mesh.FACEMESH_LEFT_EYEBROW)
-            up_dot = face_landmarks.landmark[eyeBrow[0][0]]
-            down_dot = face_landmarks.landmark[eyeBrow[5][0]]
-            eyeBrow_up = (int(up_dot.x * frame.shape[1]), int(up_dot.y * frame.shape[0]))
-            eyeBrow_down = (int(down_dot.x * frame.shape[1]), int(down_dot.y * frame.shape[0]))
-            checkPreviousPointsChange([eyeBrow_up, eyeBrow_down], 2, factor, alpha)
-
             iris = list(mp_face_mesh.FACEMESH_LEFT_IRIS)
-            left_dot = face_landmarks.landmark[iris[0][0]]
-            right_dot = face_landmarks.landmark[iris[3][0]]
+            left_dot = face_landmarks.landmark[iris[0][0]] #476
+            right_dot = face_landmarks.landmark[iris[3][0]] #474
             left_x, left_y = int(left_dot.x * frame.shape[1]), int(left_dot.y * frame.shape[0])
             right_x, right_y = int(right_dot.x * frame.shape[1]), int(right_dot.y * frame.shape[0])
-            irisCenter = (int((right_x + left_x) / 2), int((right_y + left_y) / 2))
-            checkPointChange([irisCenter],previous_iris,iris_factor, iris_alpha)
-            cv2.circle(frame, previous_iris[0], 2, (0, 0, 255), -1)
+            iris_center = (int((right_x + left_x) / 2), int((right_y + left_y) / 2))
+            iris_center = smoothEyeDetection(iris_center, previous_iris_center, initialization_flag, 0.2)
+            cv2.circle(frame, iris_center, 2, (0, 0, 255), -1)
+
+            global w,h
+            landmark = face_landmarks.landmark
+            image_points = np.array([
+                [landmark[6].x * w, landmark[6].y * h],  # Nose middle
+                [landmark[133].x * w, landmark[133].y * h],  # Right eye in
+                [landmark[362].x * w, landmark[362].y * h],  # Left eye in
+                [landmark[70].x * w, landmark[70].y * h],  # right eyeBrow outer
+                [landmark[300].x * w, landmark[300].y * h],  # left eyeBrow outer
+                [landmark[1].x * w, landmark[1].y * h],  # nose tip
+                [landmark[295].x * w, landmark[295].y * h],  # right eyeBrow middle
+                [landmark[65].x * w, landmark[65].y * h]  # left eyeBrow middle
+            ], dtype=np.float32)
+
+            image_points_z = np.array(
+                [landmark[6].z, landmark[133].z, landmark[362].z, landmark[70].z, landmark[300].z, landmark[1].z,landmark[295].z, landmark[65].z], dtype=np.float32) * distance_head_screen
 
             # print dots on the face
-            for i in previous_points:
-                for j in i:
-                    if (j != None):
-                        cv2.circle(frame, j, 2, (255, 0, 0), -1)
+            for i in image_points:
+                if (i[0] != None and i[1] != None):
+                    cv2.circle(frame, (int(i[0]), int(i[1])), 4, (255, 0, 0), -1)
+
+            if center_initialization_flag :
+                object_points = initialVariable (image_points, image_points_z)
+                relative_iris_center = [iris_center[0] - image_points[0][0], iris_center[1] - image_points[0][1], left_dot.z*distance_head_screen - image_points_z[0]]
+
+            # calculate pose using solvePnP
+            success, rvec, tvec = cv2.solvePnP(object_points, image_points, camera_matrix, dist_coeffs)
+
+            if success:
+                R, _ = cv2.Rodrigues(rvec)
+                head_pos = R @ np.array([0, 0, 0]).reshape(3, 1) + tvec
+                cv2.putText(frame, f"Head Z: {head_pos[2][0]:.1f} mm", (30, 40),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+
+                # get relative left eye location
+                eye3D = np.array(relative_iris_center, dtype=np.float32)  # לדוגמה: עין שמאל
+                eye2D, _ = cv2.projectPoints(eye3D, rvec, tvec, camera_matrix, dist_coeffs)
+                eye_point_center = tuple(eye2D[0][0].astype(int))
+
+                pitch, yaw, roll = 0,0,0
+                if initial_rvec is not None:
+                    R_initial, _ = cv2.Rodrigues(initial_rvec)
+                    R_relative  = R_initial.T @ R
+
+                    pitch = np.arctan2(R_relative[2, 1], R_relative[2, 2])  # rotation around X-axis → up/down
+                    yaw = np.arctan2(-R_relative[2, 0], np.sqrt(R_relative[0, 0] ** 2 + R_relative[1, 0] ** 2))  # Y-axis → left/right
+                    roll = np.arctan2(R_relative[1, 0], R_relative[0, 0])  # rotation around Z-axis
+
+                #     if pitch < 0:
+                #         fix_pitch_y = pitch*150 #up
+                #     else:
+                #         fix_pitch_y = pitch*40 #down
+                #
+                #     if yaw < 0:
+                #         fix_yaw_x = yaw*65 #right
+                #         fix_yaw_y = yaw * 25  # right
+                #     else:
+                #         fix_yaw_x = yaw*80 #left
+                #         fix_yaw_y = yaw * 30  # left
+                #
+                #     eye_point_center = (int(eye_point_center[0] + fix_yaw_x), int(eye_point_center[1] - fix_pitch_y - fix_yaw_y))
 
 
-            # Define relative eye center point
-            if (center_ratio_width != None):
-                x_center = int(previous_points[1][2][0] + (previous_points[1][3][0] - previous_points[1][2][0]) *center_ratio_width[0])
-                y_center = int(previous_points[1][2][1] - (previous_points[2][1][1] - previous_points[2][0][1]) *center_ratio_width[1] - ((previous_points[0][2][1] - previous_points[0][3][1]) / 2 - center_ratio_width[3])* center_ratio_width[2])
-                checkPointChange([(x_center,y_center)], previous_relative_iris_center, relative_iris_center_factor,1)
-                cv2.circle(frame, previous_relative_iris_center[0], 2, (0, 255, 0), -1)
+                eye_point_center = smoothEyeDetection(eye_point_center, previous_eye_point_center, initialization_flag, 0.3)
+
+                # print center
+                cv2.circle(frame, eye_point_center, 2, (0, 255, 0), -1)
 
 
-            # Define a virtual screen rectangle using the aspect ratio obtained from calibration
-            rectangle = []
-            if (identifyLengthFactor != None and ratio_z_left != None and ratio_z_right != None and face_initial_z != None):
-                w = int(identifyLengthFactor * (previous_points[1][3][0] - previous_points[1][2][0]))
-                h = int(w * (height / width))
-                if (face_initial_z[0] - face_left_right_z[0] < 0):
-                    print(True)
-                    horizontal_head_angle_adjustment = int(w / (2 * ratio_z_left) * (face_left_right_z[0] - face_initial_z[0]))
-                else:
-                    horizontal_head_angle_adjustment = int(w / (2 * ratio_z_right) * (face_left_right_z[1] - face_initial_z[0]))
+                if screen != None :
+                    for i in screen:
+                        x = previous_eye_point_center[0] + i[0]
+                        y = previous_eye_point_center[1] + i[1]
+                        cv2.circle(frame, (x,y), 2, (255, 255, 255), -1)
 
-                x = previous_relative_iris_center[0][0] - int(w / 2) + horizontal_head_angle_adjustment
-                y = previous_relative_iris_center[0][1] - int(h / 1.8)
-                rectangle = [x, y, w, h]
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 1)
+
 
             #resize the image to smaller size to show it
             smaller_frame = cv2.resize(frame, (1280, 720), interpolation=cv2.INTER_AREA)
-            eye_frame = frame[previous_points[1][0][1]-100:previous_points[1][1][1]+100, previous_points[1][2][0]-100:previous_points[1][3][0]+100 ]
+            eye = (int(image_points[2][0]),int(image_points[2][1]))
+            eye_frame = frame[eye[1]-100 : eye[1]+100, eye[0]-100:eye[0]+300]
+            cv2.putText(eye_frame, f"{int(pitch*1000)} ,{int(yaw*1000)} ,{int(roll*1000)}", (2, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2, cv2.LINE_AA)
 
-
-            return smaller_frame, eye_frame, previous_iris[0], previous_points[0], face_left_right_z, previous_points[1], previous_points[2], rectangle
+            return smaller_frame, eye_frame, object_points, relative_iris_center, rvec, iris_center, eye_point_center, screen
 
 
 if "__main__" == __name__:
+    image = np.zeros((900, 1800, 3), dtype=np.uint8)
+    cv2.circle(image, (900, 450), 20, (0, 0, 255), -1)  # Red dot, radius 5
+    cv2.imshow("initialization", image)
+    cv2.waitKey(3000)
+    smaller_frame, eye_frame, object_points, relative_iris_center, rvec, iris_center, eye_point_center,_ = identify(True, True)
+    cv2.imshow('initial', eye_frame)
+    cv2.waitKey(1)
     while True:
-        frame, eye_frame,_,_,_,_,_,_ = identify(False, 1800,900)
-        cv2.imshow('frame', frame)
+        smaller_frame, eye_frame, object_points, _, _, iris_center, eye_point_center,_  = identify(False,False, object_points, relative_iris_center, rvec, iris_center, eye_point_center)
+        cv2.imshow('frame', smaller_frame)
         cv2.imshow('eye_frame', eye_frame)
         cv2.waitKey(1)
