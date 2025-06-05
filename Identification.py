@@ -183,6 +183,8 @@ if "__main__" == __name__:
     cv2.waitKey(3000)
     smaller_frame, eye_frame, object_points, relative_iris_center, rvec, iris_center, eye_point_center,_ = identify(True, True)
     cv2.imshow('initial', eye_frame)
+    smaller_frame, eye_frame, object_points, relative_iris_center, rvec, iris_center, eye_point_center,_ = identify(False,False, object_points, relative_iris_center, rvec, iris_center, eye_point_center)
+    cv2.imshow('initial2', eye_frame)
     cv2.waitKey(1)
     while True:
         smaller_frame, eye_frame, object_points, _, _, iris_center, eye_point_center,_  = identify(False,False, object_points, relative_iris_center, rvec, iris_center, eye_point_center)

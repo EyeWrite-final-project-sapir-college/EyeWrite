@@ -18,7 +18,7 @@ class Ten_buttons(QWidget):
 
         # Load sound safely
         pygame.mixer.init()
-        self.click_sound = pygame.mixer.Sound("click.mp3") if os.path.exists("click.mp3") else None
+        self.click_sound = pygame.mixer.Sound("audio/click.mp3") if os.path.exists("audio/click.mp3") else None
 
         # Main layout
         main_layout = QVBoxLayout(self)
