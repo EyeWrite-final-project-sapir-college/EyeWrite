@@ -1,6 +1,5 @@
 import sys
 import threading
-
 import keyboard
 import mediapipe  # must be before PyQt6
 import numpy as np
@@ -9,12 +8,13 @@ import Identification
 import Calibration
 import cv2
 import Demo
+import Menu
 
 
-width, height = 1900, 900
+width, height = 1900, 1000
 
 app = QApplication(sys.argv)
-# window = Keyboard.KeyboardApp(width, height)
+# window = Menu.initialMenu(width, height)
 window = Demo.Ten_buttons(width, height)
 def runKeyboard():
     sys.exit(app.exec())
@@ -68,6 +68,7 @@ while True:
         cv2.destroyAllWindows()
         if keyboard_process is not None and keyboard_process.is_alive():
             keyboard_process.join()
+        window.clean_text()
         initial_flag = True
         window.hide()
         cv2.waitKey(500)

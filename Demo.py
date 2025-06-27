@@ -1,5 +1,5 @@
 import pyautogui
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QSizePolicy
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QSizePolicy, QLabel
 from PyQt6.QtGui import QTextCursor
 from PyQt6.QtCore import Qt
 import KeyboardHoverButton as HoverButton
@@ -88,10 +88,14 @@ class Ten_buttons(QWidget):
         if len(center) == 2:
             x, y = center
             if x <= 0 or y <= 0 or x >= self.width() or y >= self.height():
-                print(False)
+                 print("out of the screen")
             else:
-                print(True)
+                print("OK")
                 pyautogui.moveTo(x, y)
+
+    def clean_text (self):
+        self.text_display.clear()
+
 
 
 if __name__ == "__main__":

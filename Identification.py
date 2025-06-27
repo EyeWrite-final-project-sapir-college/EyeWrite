@@ -35,7 +35,7 @@ dist_coeffs = np.zeros((4, 1))
 distance_head_screen = 5000
 
 #################### main functions ####################
-def initialVariable (image_points, image_points_z):
+def initialOpMatrix (image_points, image_points_z):
     # 3D points relative to the nose
     object_points = np.array([
         [0.0, 0.0, 0.0],  # Nose tip
@@ -112,8 +112,8 @@ def identify (center_initialization_flag, initialization_flag, object_points = N
                     cv2.circle(frame, (int(i[0]), int(i[1])), 4, (255, 0, 0), -1)
 
             if center_initialization_flag :
-                object_points = initialVariable (image_points, image_points_z)
-                relative_iris_center = [iris_center[0] - image_points[0][0], iris_center[1] - image_points[0][1], left_dot.z*distance_head_screen - image_points_z[0]]
+                object_points = initialOpMatrix (image_points, image_points_z)
+                relative_iris_center = [iris_center[0] - image_points[0][0], iris_center[1] - image_points[0][1], (left_dot.z + right_dot.z)/2*distance_head_screen - image_points_z[0]]
 
             # calculate pose using solvePnP
             success, rvec, tvec = cv2.solvePnP(object_points, image_points, camera_matrix, dist_coeffs)
@@ -138,19 +138,19 @@ def identify (center_initialization_flag, initialization_flag, object_points = N
                     yaw = np.arctan2(-R_relative[2, 0], np.sqrt(R_relative[0, 0] ** 2 + R_relative[1, 0] ** 2))  # Y-axis → left/right
                     roll = np.arctan2(R_relative[1, 0], R_relative[0, 0])  # rotation around Z-axis
 
-                #     if pitch < 0:
-                #         fix_pitch_y = pitch*150 #up
-                #     else:
-                #         fix_pitch_y = pitch*40 #down
-                #
-                #     if yaw < 0:
-                #         fix_yaw_x = yaw*65 #right
-                #         fix_yaw_y = yaw * 25  # right
-                #     else:
-                #         fix_yaw_x = yaw*80 #left
-                #         fix_yaw_y = yaw * 30  # left
-                #
-                #     eye_point_center = (int(eye_point_center[0] + fix_yaw_x), int(eye_point_center[1] - fix_pitch_y - fix_yaw_y))
+                    # if pitch < 0:
+                    #     fix_pitch_y = pitch*40 #up
+                    # else:
+                    #     fix_pitch_y = pitch*40 #down
+                    #
+                    # if yaw < 0:
+                    #     fix_yaw_x = yaw * 70#65 #right
+                    #     # fix_yaw_y = yaw * 25  # right
+                    # else:
+                    #     fix_yaw_x = yaw * 80#80 #left
+                    #     # fix_yaw_y = yaw * 30  # left
+                    #
+                    # eye_point_center = (int(eye_point_center[0] + fix_yaw_x), int(eye_point_center[1] - fix_pitch_y))
 
 
                 eye_point_center = smoothEyeDetection(eye_point_center, previous_eye_point_center, initialization_flag, 0.3)
@@ -177,8 +177,8 @@ def identify (center_initialization_flag, initialization_flag, object_points = N
 
 
 if "__main__" == __name__:
-    image = np.zeros((900, 1800, 3), dtype=np.uint8)
-    cv2.circle(image, (900, 450), 20, (0, 0, 255), -1)  # Red dot, radius 5
+    image = np.zeros((1000, 1900, 3), dtype=np.uint8)
+    cv2.circle(image, (950, 500), 20, (0, 0, 255), -1)  # Red dot, radius 5
     cv2.imshow("initialization", image)
     cv2.waitKey(3000)
     smaller_frame, eye_frame, object_points, relative_iris_center, rvec, iris_center, eye_point_center,_ = identify(True, True)
@@ -190,4 +190,4 @@ if "__main__" == __name__:
         smaller_frame, eye_frame, object_points, _, _, iris_center, eye_point_center,_  = identify(False,False, object_points, relative_iris_center, rvec, iris_center, eye_point_center)
         cv2.imshow('frame', smaller_frame)
         cv2.imshow('eye_frame', eye_frame)
-        cv2.waitKey(1)
+        cv2.waitKey(100)
