@@ -65,9 +65,9 @@ class KeyboardApp(QWidget):
                     border: 2px solid #498aab;       
                }}
            """)
-        # 437e9c another option for hover border, just a little more darker
+
     def keyboard_first_page(self):
-        buttonSize = 170
+        buttonSize = 100
         self.clear_layout(self.keyboard_layout)
 
         def add_centered_row(button_texts, row_index):
@@ -83,9 +83,9 @@ class KeyboardApp(QWidget):
             row_widget.setLayout(row_layout)
             self.keyboard_layout.addWidget(row_widget, row_index, 0, 1, 10)
 
-        add_centered_row(['ק', 'ר', 'א', 'ט', 'ו', 'ם', 'פ', 'DEL'], 0)
-        add_centered_row(['ש', 'ד', 'ג', 'כ', 'ע', 'י', 'ח', 'ל', 'ך', 'ף'], 1)
-        add_centered_row(['ז', 'ס', 'ב', 'ה', 'נ', 'מ', 'צ', 'ת', 'ץ'], 2)
+        add_centered_row(['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', 'DEL'], 0)
+        add_centered_row(['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';'], 1)
+        add_centered_row(['z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.'], 2)
 
         # שורה 4
         row4_layout = QHBoxLayout()
@@ -99,27 +99,33 @@ class KeyboardApp(QWidget):
             self.keyboard_second_page()
         ))
 
-        button_space = HoverButton.KeyboardHoverButton("רווח")
+        button_space = HoverButton.KeyboardHoverButton("space")
         button_space.setFixedSize(700, buttonSize)
         self.design_keyboard(button_space)
-        button_space.clicked.connect(lambda checked, text="רווח": self.update_text(text))
+        button_space.clicked.connect(lambda checked, text="space": self.update_text(text))
 
         button_dot = HoverButton.KeyboardHoverButton(".")
         button_dot.setFixedSize(buttonSize, buttonSize)
         self.design_keyboard(button_dot)
         button_dot.clicked.connect(lambda checked, text=".": self.update_text(text))
 
-        button_enter = HoverButton.KeyboardHoverButton("שורה חדשה")
+        button_enter = HoverButton.KeyboardHoverButton("New Line")
         button_enter.setFixedSize(buttonSize, buttonSize)
         self.design_keyboard(button_enter)
-        button_enter.clicked.connect(lambda checked, text="שורה חדשה": self.update_text(text))
+        button_enter.clicked.connect(lambda checked, text="New Line": self.update_text(text))
 
         button_comma = HoverButton.KeyboardHoverButton(",")
         button_comma.setFixedSize(buttonSize, buttonSize)
         self.design_keyboard(button_comma)
         button_comma.clicked.connect(lambda checked, text=",": self.update_text(text))
 
+        Caps_Lock = HoverButton.KeyboardHoverButton("Caps Lock")
+        Caps_Lock.setFixedSize(buttonSize, buttonSize)
+        self.design_keyboard(Caps_Lock)
+        button_comma.clicked.connect(lambda checked, text="Caps Lock": self.update_text(text))
+
         row4_layout.addWidget(button_123)
+        row4_layout.addWidget(Caps_Lock)
         row4_layout.addWidget(button_comma)
         row4_layout.addWidget(button_space)
         row4_layout.addWidget(button_dot)
@@ -128,9 +134,70 @@ class KeyboardApp(QWidget):
         row4_widget = QWidget()
         row4_widget.setLayout(row4_layout)
         self.keyboard_layout.addWidget(row4_widget, 3, 0, 1, 10)
-
     def keyboard_second_page(self):
-        buttonSize = 170
+        buttonSize = 100
+        self.clear_layout(self.keyboard_layout)
+
+        def add_centered_row(button_texts, row_index):
+            row_layout = QHBoxLayout()
+            row_layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+            for text in button_texts:
+                button = HoverButton.KeyboardHoverButton(text)
+                button.setFixedSize(buttonSize, buttonSize)
+                self.design_keyboard(button)
+                button.clicked.connect(lambda checked, t=text: self.update_text(t))
+                row_layout.addWidget(button)
+            row_widget = QWidget()
+            row_widget.setLayout(row_layout)
+            self.keyboard_layout.addWidget(row_widget, row_index, 0, 1, 10)
+
+        add_centered_row(['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'], 0)
+        add_centered_row(['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ';'], 1)
+        add_centered_row(['Z', 'X', 'C', 'V', 'B', 'N', 'M', ',', '.', 'DEL'], 2)
+
+        # שורה 4
+        row4_layout = QHBoxLayout()
+        row4_layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+
+        button_abc = HoverButton.KeyboardHoverButton("123")
+        button_abc.setFixedSize(buttonSize, buttonSize)
+        self.design_keyboard(button_abc)
+        button_abc.clicked.connect(lambda: (
+            self.click_sound.play(),
+            self.keyboard_first_page()
+        ))
+
+        button_space = HoverButton.KeyboardHoverButton("space")
+        button_space.setFixedSize(700, buttonSize)
+        self.design_keyboard(button_space)
+        button_space.clicked.connect(lambda checked, text="space": self.update_text(text))
+
+        button_dot = HoverButton.KeyboardHoverButton(".")
+        button_dot.setFixedSize(buttonSize, buttonSize)
+        self.design_keyboard(button_dot)
+        button_dot.clicked.connect(lambda checked, text=".": self.update_text(text))
+
+        button_enter = HoverButton.KeyboardHoverButton("New Line")
+        button_enter.setFixedSize(buttonSize, buttonSize)
+        self.design_keyboard(button_enter)
+        button_enter.clicked.connect(lambda checked, text="New Line": self.update_text(text))
+
+        button_comma = HoverButton.KeyboardHoverButton(",")
+        button_comma.setFixedSize(buttonSize, buttonSize)
+        self.design_keyboard(button_comma)
+        button_comma.clicked.connect(lambda checked, text=",": self.update_text(text))
+
+        row4_layout.addWidget(button_abc)
+        row4_layout.addWidget(button_comma)
+        row4_layout.addWidget(button_space)
+        row4_layout.addWidget(button_dot)
+        row4_layout.addWidget(button_enter)
+
+        row4_widget = QWidget()
+        row4_widget.setLayout(row4_layout)
+        self.keyboard_layout.addWidget(row4_widget, 3, 0, 1, 10)
+    def keyboard_third_page(self):
+        buttonSize = 100
         self.clear_layout(self.keyboard_layout)
 
         def add_centered_row(button_texts, row_index):
@@ -155,7 +222,7 @@ class KeyboardApp(QWidget):
         row4_layout = QHBoxLayout()
         row4_layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
 
-        button_abc = HoverButton.KeyboardHoverButton("אבג")
+        button_abc = HoverButton.KeyboardHoverButton("ABC")
         button_abc.setFixedSize(buttonSize, buttonSize)
         self.design_keyboard(button_abc)
         button_abc.clicked.connect(lambda: (
@@ -163,10 +230,10 @@ class KeyboardApp(QWidget):
             self.keyboard_first_page()
         ))
 
-        button_space = HoverButton.KeyboardHoverButton("רווח")
+        button_space = HoverButton.KeyboardHoverButton("space")
         button_space.setFixedSize(700, buttonSize)
         self.design_keyboard(button_space)
-        button_space.clicked.connect(lambda checked, text="רווח": self.update_text(text))
+        button_space.clicked.connect(lambda checked, text="space": self.update_text(text))
 
         button_dot = HoverButton.KeyboardHoverButton(".")
         button_dot.setFixedSize(buttonSize, buttonSize)
@@ -192,6 +259,7 @@ class KeyboardApp(QWidget):
         row4_widget = QWidget()
         row4_widget.setLayout(row4_layout)
         self.keyboard_layout.addWidget(row4_widget, 3, 0, 1, 10)
+
 
     def update_text(self, text):
         self.click_sound.play()
