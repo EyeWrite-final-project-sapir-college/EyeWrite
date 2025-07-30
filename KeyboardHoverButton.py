@@ -1,6 +1,5 @@
 from PyQt6.QtWidgets import QPushButton
 from PyQt6.QtCore import QTimer
-from PyQt6.QtGui import QPainter, QColor
 
 class KeyboardHoverButton(QPushButton):
     """Custom button that triggers a click after 3 seconds of hovering"""
@@ -13,7 +12,6 @@ class KeyboardHoverButton(QPushButton):
     def enterEvent(self, event):
         """Start timer when mouse enters"""
         self.timer.start(1000)  # 1 seconds delay
-
 
     def leaveEvent(self, event):
         self.timer.stop()
