@@ -1,12 +1,11 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy
 from PyQt6.QtCore import Qt
 import KeyboardHoverButton
-import pyautogui
 import pygame
 
 
 class KeyboardApp(QWidget):
-    def __init__(self, width, height):
+    def __init__(self):
         super().__init__()
         self.caps_on = False  # Track the Caps Lock state
 
@@ -49,7 +48,7 @@ class KeyboardApp(QWidget):
             }}
         """)
 
-    def create_centered_row(self, button_texts, row_index, on_click):
+    def create_centered_row(self, button_texts, on_click):
         # Create a horizontal row of keyboard buttons centered in the layout
         row_layout = QHBoxLayout()
         row_layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
@@ -65,7 +64,7 @@ class KeyboardApp(QWidget):
         row_widget.setLayout(row_layout)
         self.keyboard_layout.addWidget(row_widget)
 
-    def create_bottom_row(self, switch_button_text, switch_action):
+    def create_bottom_row(self, switch_button_text):
         # Create the special function row with "space", "enter", etc.
         row_layout = QHBoxLayout()
         row_layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
@@ -95,26 +94,26 @@ class KeyboardApp(QWidget):
     def keyboard_first_page(self):
         # Default lowercase letters layout
         self.clear_layout(self.keyboard_layout)
-        self.create_centered_row(['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'], 0, self.update_text)
-        self.create_centered_row(['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'], 1, self.update_text)
-        self.create_centered_row(['Caps Lock', 'z', 'x', 'c', 'v', 'b', 'n', 'm', 'DEL'], 2, self.update_text)
-        self.create_bottom_row("123", lambda: self.update_text("123"))
+        self.create_centered_row(['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'], self.update_text)
+        self.create_centered_row(['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'], self.update_text)
+        self.create_centered_row(['Caps Lock', 'z', 'x', 'c', 'v', 'b', 'n', 'm', 'DEL'], self.update_text)
+        self.create_bottom_row("123")
 
     def keyboard_second_page(self):
         # Capital letters layout
         self.clear_layout(self.keyboard_layout)
-        self.create_centered_row(['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'], 0, self.update_text)
-        self.create_centered_row(['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'], 1, self.update_text)
-        self.create_centered_row(['Caps Lock', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'DEL'], 2, self.update_text)
-        self.create_bottom_row("123", lambda: self.update_text("123"))
+        self.create_centered_row(['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'], self.update_text)
+        self.create_centered_row(['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'], self.update_text)
+        self.create_centered_row(['Caps Lock', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'DEL'], self.update_text)
+        self.create_bottom_row("123")
 
     def keyboard_third_page(self):
         # Symbols and numbers layout
         self.clear_layout(self.keyboard_layout)
-        self.create_centered_row(['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'], 0, self.update_text)
-        self.create_centered_row(['!', '@', '#', '$', '%', '^', '&', '*', '(', ')'], 1, self.update_text)
-        self.create_centered_row(['-', '_', '=', '+', '/', '?', '\" ', '\'', ':', 'DEL'], 2, self.update_text)
-        self.create_bottom_row("abc", lambda: self.update_text("abc"))
+        self.create_centered_row(['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'], self.update_text)
+        self.create_centered_row(['!', '@', '#', '$', '%', '^', '&', '*', '(', ')'], self.update_text)
+        self.create_centered_row(['-', '_', '=', '+', '/', '?', '\" ', '\'', ':', 'DEL'], self.update_text)
+        self.create_bottom_row("abc")
 
     def update_text(self, text):
         # Handle button text input logic

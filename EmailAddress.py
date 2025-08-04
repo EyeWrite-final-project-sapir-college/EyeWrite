@@ -1,4 +1,3 @@
-import pyautogui
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QTextEdit, QHBoxLayout
 import KeyboardHoverButton
@@ -27,7 +26,6 @@ class EmailAddress(QWidget):
         self.text_box = QTextEdit()
         self.text_box.setPlaceholderText("Enter an email address...")
         self.text_box.setFixedHeight(int(height * 0.15))
-        self.text_box.setFixedWidth(int(width * 0.8))
         self.text_box.setStyleSheet("""
             QTextEdit {
                 font-size: 20px;
@@ -38,7 +36,7 @@ class EmailAddress(QWidget):
 
         # Continue button to go to next screen
         continue_button = KeyboardHoverButton.KeyboardHoverButton("Continue")
-        continue_button.setFixedSize(130, 70)
+        continue_button.setFixedSize(140, 120)
         continue_button.setStyleSheet("""
             QPushButton {
                 border-radius: 25px;
@@ -56,7 +54,7 @@ class EmailAddress(QWidget):
 
         # Gmail shortcut button
         gmail_button = KeyboardHoverButton.KeyboardHoverButton("@gmail.com")
-        gmail_button.setFixedSize(130, 70)
+        gmail_button.setMaximumSize(140, 120)
         gmail_button.setStyleSheet("""
             QPushButton {
                 border-radius: 25px;
@@ -77,14 +75,14 @@ class EmailAddress(QWidget):
         layout.addLayout(top_row)
 
         # Virtual keyboard setup
-        self.keyboard = VirtualKeyboard.KeyboardApp(width, height)
+        self.keyboard = VirtualKeyboard.KeyboardApp()
         self.keyboard.text_box = self.text_box
         layout.addWidget(self.keyboard)
 
         self.setLayout(layout)
 
     def insert_text_with_sound(self, text):
-        """Insert text at the end of the text box with sound feedback"""
+        # Insert text at the end of the text box with sound feedback
         self.click_sound.stop()
         self.click_sound.play()
         cursor = self.text_box.textCursor()
@@ -93,20 +91,13 @@ class EmailAddress(QWidget):
         self.text_box.setTextCursor(cursor)
 
     def handle_continue(self, stack, width, height):
-        """Transition to the email body screen"""
+        # Transition to the email body screen
         self.click_sound.play()
         self.saved_email = self.text_box.toPlainText()
 
         email_body_screen = EmailBody.EmailBody(stack, width, height, self.saved_email)
+
+        self.saved_email = ""
+        self.text_box.clear()
         stack.addWidget(email_body_screen)  # index 3
         stack.setCurrentIndex(3)
-
-    def update_cursor_position(self, center):
-        """Move the mouse cursor to the given position if it's inside the window"""
-        if len(center) == 2:
-            x, y = center
-            if x <= 0 or y <= 0 or x >= self.width() or y >= self.height():
-                print("out of the screen")
-            else:
-                print("OK")
-                pyautogui.moveTo(x, y)

@@ -1,4 +1,3 @@
-import pyautogui
 from PyQt6.QtWidgets import QWidget, QGridLayout, QVBoxLayout, QHBoxLayout, QLabel, QStackedLayout
 from PyQt6.QtCore import Qt, QTimer
 import pygame
@@ -24,7 +23,7 @@ class VerifyCalibration(QWidget):
         self.main_layout = QStackedLayout()
         self.setLayout(self.main_layout)
 
-        # ======== Start screen with countdown ========
+        #------------------- Start screen with countdown -------------------
         self.start_screen = QWidget()
         start_layout = QVBoxLayout()
         start_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -41,7 +40,7 @@ class VerifyCalibration(QWidget):
         start_layout.addWidget(self.countdown_label)
         self.start_screen.setLayout(start_layout)
 
-        # ======== Button screen ========
+        #------------------- Button screen -------------------
         self.button_screen = self.create_button_screen(stack)
 
         # Add screens to the stacked layout
@@ -58,7 +57,7 @@ class VerifyCalibration(QWidget):
         self.countdown_timer.timeout.connect(self.update_countdown)
 
     def start_verification(self):
-        """Called to start the calibration process"""
+        # Called to start the calibration process
         self.count = 3
         self.countdown_label.setText("")
         self.main_layout.setCurrentWidget(self.start_screen)
@@ -72,12 +71,12 @@ class VerifyCalibration(QWidget):
         self.start_delay_timer.start(2000)  # 2-second delay before countdown
 
     def start_countdown(self):
-        """Start the 3-second countdown before button screen appears"""
+        # Start the 3-second countdown before button screen appears
         self.countdown_label.setText(str(self.count))
         self.countdown_timer.start(1000)  # Countdown every second
 
     def update_countdown(self):
-        """Update countdown display each second"""
+        # Update countdown display each second
         if self.count > 1:
             self.count -= 1
             self.countdown_label.setText(str(self.count))
@@ -86,7 +85,7 @@ class VerifyCalibration(QWidget):
             self.main_layout.setCurrentWidget(self.button_screen)
 
     def default_button_style(self):
-        """Return the default button style"""
+        # Return the default button style
         return """
             QPushButton {
                 background-color: #f7fafc;
@@ -103,7 +102,7 @@ class VerifyCalibration(QWidget):
         """
 
     def clicked_button_style(self):
-        """Return the style for a button after being clicked"""
+        # Return the style for a button after being clicked
         return """
             QPushButton {
                 background-color: #b3d5e6;
@@ -116,7 +115,7 @@ class VerifyCalibration(QWidget):
         """
 
     def styled_button(self, stack, text):
-        """Create a styled clickable button"""
+        # Create a styled clickable button
         btn = KeyboardHoverButton.KeyboardHoverButton(text)
         btn.setFixedSize(180, 180)
         btn.setStyleSheet(self.default_button_style())
@@ -134,7 +133,7 @@ class VerifyCalibration(QWidget):
         return btn
 
     def create_button_screen(self, stack):
-        """Create the layout for the 4-button calibration screen"""
+        # Create the layout for the 4-button calibration screen
         screen = QWidget()
         layout = QGridLayout()
         layout.setSpacing(0)
@@ -142,7 +141,7 @@ class VerifyCalibration(QWidget):
         screen.setContentsMargins(0, 0, 0, 0)
 
         def centered_container(widget, vertical=True):
-            """Helper to center a widget inside a layout"""
+            # Helper to center a widget inside a layout
             wrapper = QWidget()
             wrapper_layout = QVBoxLayout() if vertical else QHBoxLayout()
             wrapper_layout.setContentsMargins(0, 0, 0, 0)
@@ -173,13 +172,3 @@ class VerifyCalibration(QWidget):
 
         screen.setLayout(layout)
         return screen
-
-    def update_cursor_position(self, center):
-        """Move the mouse cursor to the given position if it's inside the window"""
-        if len(center) == 2:
-            x, y = center
-            if x <= 0 or y <= 0 or x >= self.width() or y >= self.height():
-                print("out of the screen")
-            else:
-                print("OK")
-                pyautogui.moveTo(x, y)

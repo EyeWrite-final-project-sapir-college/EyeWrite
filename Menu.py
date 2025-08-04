@@ -1,8 +1,4 @@
-import pyautogui
-from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget,
-    QApplication, QLabel, QSizePolicy
-)
+from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, QSizePolicy)
 from PyQt6.QtCore import Qt
 import KeyboardHoverButton
 import pygame
@@ -14,8 +10,6 @@ class MenuScreen(QWidget):
 
         self.stack = stack  # Reference to the stacked widget for screen switching
         stack.setWindowTitle("Main Screen")  # Set window title
-
-        self.resize(width, height)
 
         # Initialize and load click sound
         pygame.mixer.init()
@@ -58,7 +52,7 @@ class MenuScreen(QWidget):
 
         # Set style and layout properties for all buttons
         for btn in [btn_email_address, btn_verify]:
-            btn.setMinimumSize(275, 275)
+            btn.setMinimumSize(100, 100)
             btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
             btn.setStyleSheet("""
                 QPushButton {
@@ -111,12 +105,3 @@ class MenuScreen(QWidget):
         verify_screen.start_verification()
         self.stack.setCurrentIndex(2)
 
-    def update_cursor_position(self, center):
-        """Move the mouse cursor to the given position if it's inside the window"""
-        if len(center) == 2:
-            x, y = center
-            if x <= 0 or y <= 0 or x >= self.width() or y >= self.height():
-                print("out of the screen")
-            else:
-                print("OK")
-                pyautogui.moveTo(x, y)
