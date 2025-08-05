@@ -1,11 +1,10 @@
 import sys
-
 import pyautogui
 from PyQt6.QtWidgets import QStackedWidget, QApplication
 import EmailAddress
 import VerifyCalibration
 from Menu import MenuScreen
-
+import EmailBody
 
 class MenuContainer(QStackedWidget):
     def __init__(self, width, height):
@@ -16,13 +15,15 @@ class MenuContainer(QStackedWidget):
 
         # Initialize all screens and pass the stack reference to each
         self.menu_screen = MenuScreen(self, width, height)
-        self.email_screen = EmailAddress.EmailAddress(self, width, height)
+        self.email_body_screen = EmailBody.EmailBody(self, width, height, "")
+        self.email_address_screen = EmailAddress.EmailAddress(self, width, height, self.email_body_screen)
         self.verify_screen = VerifyCalibration.VerifyCalibration(self, width, height)
 
         # Add screens to the stack
         self.addWidget(self.menu_screen)    # index 0 = main menu
-        self.addWidget(self.email_screen)   # index 1 = email input screen
+        self.addWidget(self.email_address_screen)   # index 1 = email address screen
         self.addWidget(self.verify_screen)  # index 2 = calibration verification screen
+        self.addWidget(self.email_body_screen)  # index 3 = email body screen
 
         # Show the menu screen by default
         self.setCurrentIndex(0)

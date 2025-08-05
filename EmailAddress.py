@@ -6,15 +6,17 @@ import VirtualKeyboard
 import pygame
 
 class EmailAddress(QWidget):
-    def __init__(self, stack, width, height):
+    def __init__(self, stack, width, height, email_body_screen):
         super().__init__()
 
+        self.stack = stack
         self.resize(width, height)
+
+        self.email_body_screen = email_body_screen
 
         # Initialize sound
         pygame.mixer.init()
         self.click_sound = pygame.mixer.Sound("audio/click.mp3")
-        self.saved_email = ""
 
         # Main layout
         layout = QVBoxLayout()
@@ -49,7 +51,7 @@ class EmailAddress(QWidget):
                 border: 2px solid #498aab;
             }
         """)
-        continue_button.clicked.connect(lambda: self.handle_continue(stack, width, height))
+        continue_button.clicked.connect(self.handle_continue)
         top_row.addWidget(continue_button, alignment=Qt.AlignmentFlag.AlignRight)
 
         # Gmail shortcut button
@@ -90,14 +92,13 @@ class EmailAddress(QWidget):
         cursor.insertText(text)
         self.text_box.setTextCursor(cursor)
 
-    def handle_continue(self, stack, width, height):
+    def handle_continue(self):
         # Transition to the email body screen
         self.click_sound.play()
-        self.saved_email = self.text_box.toPlainText()
-
-        email_body_screen = EmailBody.EmailBody(stack, width, height, self.saved_email)
-
-        self.saved_email = ""
+        email = self.text_box.toPlainText().strip()
+        self.email_body_screen.set_email_address(email)
+        self.stack.setCurrentWidget(self.email_body_screen)  # move to email_body_screen
         self.text_box.clear()
-        stack.addWidget(email_body_screen)  # index 3
-        stack.setCurrentIndex(3)
+
+    def clean_text(self):
+        self.text_box.clear()

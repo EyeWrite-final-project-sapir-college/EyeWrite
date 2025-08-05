@@ -9,6 +9,7 @@ class EmailBody(QWidget):
     def __init__(self, stack, width, height, email_address):
         super().__init__()
 
+        self.stack = stack
         self.resize(width, height)
 
         self.email_address = email_address  # Store the provided email address
@@ -59,7 +60,7 @@ class EmailBody(QWidget):
                 border: 2px solid #498aab;
             }
         """)
-        send_button.clicked.connect(lambda: self.handle_continue(stack))
+        send_button.clicked.connect(self.handle_continue)
         top_row.addWidget(send_button, alignment=Qt.AlignmentFlag.AlignRight)
 
         top_row.setContentsMargins(100, 0, 280, 0)  # Padding within row
@@ -76,21 +77,18 @@ class EmailBody(QWidget):
         layout.setStretch(1, 1)  # top row
         layout.setStretch(2, 3)  # keyboard
 
-
         self.setLayout(layout)
 
+    def set_email_address(self, email_address: str):
+        self.email_address = email_address
+        self.email_label.setText(f"To: {self.email_address}")
 
-
-    def handle_continue(self, stack):
+    def handle_continue(self):
         # Triggered when "Send mail" is clicked
         print("continued !!")
         self.click_sound.play()
-        self.saved_email_body = self.body_box.toPlainText()
 
         # TODO: Connect to email service and send message
-        # TODO: Reset email address and body fields if needed
 
-        self.email_address = ""
-        self.saved_email_body = ""
         self.body_box.clear()
-        stack.setCurrentIndex(0)  # Return to main screen
+        self.stack.setCurrentIndex(0)  # Return to main screen
