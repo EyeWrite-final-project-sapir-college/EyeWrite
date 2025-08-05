@@ -24,7 +24,6 @@ class MenuContainer(QStackedWidget):
         self.addWidget(self.email_address_screen)   # index 1 = email address screen
         self.addWidget(self.verify_screen)  # index 2 = calibration verification screen
         self.addWidget(self.email_body_screen)  # index 3 = email body screen
-
         # Show the menu screen by default
         self.setCurrentIndex(0)
 

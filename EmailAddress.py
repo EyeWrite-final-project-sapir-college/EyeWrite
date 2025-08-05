@@ -102,3 +102,4 @@ class EmailAddress(QWidget):
 
     def clean_text(self):
         self.text_box.clear()
+

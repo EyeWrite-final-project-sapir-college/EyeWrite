@@ -89,6 +89,5 @@ class EmailBody(QWidget):
         self.click_sound.play()
 
         # TODO: Connect to email service and send message
-
         self.body_box.clear()
         self.stack.setCurrentIndex(0)  # Return to main screen
