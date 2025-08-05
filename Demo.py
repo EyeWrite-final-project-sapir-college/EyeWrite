@@ -1,5 +1,5 @@
 import pyautogui
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QSizePolicy, QLabel
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QSizePolicy
 from PyQt6.QtGui import QTextCursor
 from PyQt6.QtCore import Qt
 import KeyboardHoverButton as HoverButton
@@ -90,7 +90,7 @@ class Ten_buttons(QWidget):
         self.text_display.setTextCursor(cursor)
 
     def update_cursor_position(self, center):
-        """Move the mouse cursor to the given position if it's inside the window"""
+        # Move the mouse cursor to the given position if it's inside the window
         if len(center) == 2:
             x, y = center
             if x <= 0 or y <= 0 or x >= self.width() or y >= self.height():
@@ -108,5 +108,5 @@ class Ten_buttons(QWidget):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     demo = Ten_buttons(1900, 900)
-    demo.show()
+    demo.showMaximized()
     sys.exit(app.exec())

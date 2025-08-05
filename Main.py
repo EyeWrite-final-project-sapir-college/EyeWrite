@@ -41,7 +41,7 @@ while True:
         else:
             window = Demo.Ten_buttons(width, height)  # Demo keyboard
 
-        window.show()
+        window.showMaximized()
 
         # Start the Qt event loop in a new thread
         keyboard_process = threading.Thread(target=runKeyboard)

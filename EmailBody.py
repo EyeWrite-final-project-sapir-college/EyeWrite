@@ -1,4 +1,3 @@
-import pyautogui
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QTextEdit, QHBoxLayout, QLabel, QSizePolicy
 import VirtualKeyboard
@@ -20,14 +19,14 @@ class EmailBody(QWidget):
         self.click_sound = pygame.mixer.Sound("audio/click.mp3")
 
         # Email label displaying the recipient address
-        email_label = QLabel(f"To: {self.email_address}")
-        email_label.setStyleSheet("font-size: 18px; font-family: Segoe UI; color: #333;")
+        self.email_label = QLabel(f"To: {self.email_address}")
+        self.email_label.setStyleSheet("font-size: 18px; font-family: Segoe UI; color: #333;")
 
         # Main vertical layout
         layout = QVBoxLayout()
         layout.setContentsMargins(40, 10, 40, 10)  # left, top, right, bottom
         layout.setSpacing(8)
-        layout.addWidget(email_label)
+        layout.addWidget(self.email_label)
 
         # Row containing text box and send button
         top_row = QHBoxLayout()
@@ -37,7 +36,6 @@ class EmailBody(QWidget):
         self.body_box = QTextEdit()
         self.body_box.setPlaceholderText("Type your message here...")
         self.body_box.setFixedHeight(int(height * 0.15))
-        self.body_box.setFixedWidth(int(width * 0.8))
         self.body_box.setStyleSheet("""
             QTextEdit {
                 font-size: 20px;
@@ -48,7 +46,7 @@ class EmailBody(QWidget):
 
         # Send button
         send_button = KeyboardHoverButton.KeyboardHoverButton("Send mail")
-        send_button.setFixedSize(180, 90)
+        send_button.setFixedSize(140, 120)
         send_button.setStyleSheet("""
             QPushButton {
                 border-radius: 25px;
@@ -68,7 +66,7 @@ class EmailBody(QWidget):
         layout.addLayout(top_row)
 
         # Virtual keyboard component
-        self.keyboard = VirtualKeyboard.KeyboardApp(width, height)
+        self.keyboard = VirtualKeyboard.KeyboardApp()
         self.keyboard.text_box = self.body_box  # Connect keyboard to text box
         self.keyboard.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         layout.addWidget(self.keyboard)
@@ -78,7 +76,10 @@ class EmailBody(QWidget):
         layout.setStretch(1, 1)  # top row
         layout.setStretch(2, 3)  # keyboard
 
+
         self.setLayout(layout)
+
+
 
     def handle_continue(self, stack):
         # Triggered when "Send mail" is clicked
@@ -89,15 +90,7 @@ class EmailBody(QWidget):
         # TODO: Connect to email service and send message
         # TODO: Reset email address and body fields if needed
 
+        self.email_address = ""
         self.saved_email_body = ""
+        self.body_box.clear()
         stack.setCurrentIndex(0)  # Return to main screen
-
-    def update_cursor_position(self, center):
-        """Move the mouse cursor to the given position if it's inside the window"""
-        if len(center) == 2:
-            x, y = center
-            if x <= 0 or y <= 0 or x >= self.width() or y >= self.height():
-                print("out of the screen")
-            else:
-                print("OK")
-                pyautogui.moveTo(x, y)

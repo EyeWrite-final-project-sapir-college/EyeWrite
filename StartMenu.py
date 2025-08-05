@@ -1,4 +1,6 @@
 import sys
+
+import pyautogui
 from PyQt6.QtWidgets import QStackedWidget, QApplication
 import EmailAddress
 import VerifyCalibration
@@ -11,7 +13,6 @@ class MenuContainer(QStackedWidget):
 
         # Set window title and size
         self.setWindowTitle("Menu")
-        self.resize(width, height)
 
         # Initialize all screens and pass the stack reference to each
         self.menu_screen = MenuScreen(self, width, height)
@@ -25,13 +26,17 @@ class MenuContainer(QStackedWidget):
 
         # Show the menu screen by default
         self.setCurrentIndex(0)
-        self.show()
 
     # Pass eye position to the current visible screen if supported
     def update_cursor_position(self, center):
-        current_widget = self.currentWidget()
-        if hasattr(current_widget, "update_cursor_position"):
-            current_widget.update_cursor_position(center)
+        # Move the mouse cursor to the given position if it's inside the window
+        if len(center) == 2:
+            x, y = center
+            if x <= 0 or y <= 0 or x >= self.width() or y >= self.height():
+                print("out of the screen")
+            else:
+                print("OK")
+                pyautogui.moveTo(x, y)
 
     # Clear any text input on the current screen if supported
     def clean_text(self):
@@ -44,4 +49,5 @@ class MenuContainer(QStackedWidget):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MenuContainer(1900, 1000)
+    window.showMaximized()
     sys.exit(app.exec())

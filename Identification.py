@@ -19,11 +19,11 @@ w, h = 3840, 2160  # Set 4K resolution for better accuracy
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, w)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, h)
 
-# Define intrinsic camera matrix (assuming fx = fy = focal_length)
-focal_length = w
+# Define intrinsic camera matrix, Approximate focal length in pixels
+focalLength = 0.5 * (w + h)
 camera_matrix = np.array([
-    [focal_length, 0, w / 2],
-    [0, focal_length, w / 2],
+    [focalLength, 0, w / 2],
+    [0, focalLength, h / 2],
     [0, 0, 1]
 ], dtype=np.float32)
 
@@ -37,9 +37,7 @@ distance_head_screen = 5000
 #------------------- Helper Functions -------------------
 
 def initialOpMatrix(image_points, image_points_z):
-    """
-    Create 3D object points relative to the nose tip for pose estimation.
-    """
+    # Create 3D object points relative to the nose tip for pose estimation.
     object_points = np.array([
         [0.0, 0.0, 0.0],  # Nose tip (origin)
         [image_points[1][0] - image_points[0][0], image_points[1][1] - image_points[0][1], image_points_z[1] - image_points_z[0]],
@@ -54,9 +52,7 @@ def initialOpMatrix(image_points, image_points_z):
 
 
 def smoothEyeDetection(new_point, exist_point, initialization_flag, alpha):
-    """
-    Smooth the movement of the eye center using exponential moving average.
-    """
+    # Smooth the movement of the eye center using exponential moving average.
     if exist_point is None:
         return new_point
     if initialization_flag:
@@ -73,9 +69,8 @@ def identify(center_initialization_flag, initialization_flag,
              object_points=None, relative_iris_center=None,
              initial_rvec=None, previous_iris_center=None,
              previous_eye_point_center=None, screen=None):
-    """
-    Detect face and eyes using MediaPipe and return relevant pose and gaze data.
-    """
+
+    # Detect face and eyes using MediaPipe and return relevant pose and gaze data.
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
