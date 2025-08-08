@@ -1,6 +1,4 @@
 import ctypes
-from ctypes import wintypes
-
 import Identification
 import cv2
 import numpy as np
