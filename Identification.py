@@ -14,7 +14,14 @@ face_mesh = mp_face_mesh.FaceMesh(
 )
 
 # Initialize webcam (default camera)
-cap = cv2.VideoCapture(0)
+try:
+    cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        raise RuntimeError("Cannot open webcam")
+except Exception as e:
+    print("Camera initialization failed:", e)
+    exit(1)
+
 w, h = 3840, 2160  # Set 4K resolution for better accuracy
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, w)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, h)
@@ -53,6 +60,8 @@ def initialOpMatrix(image_points, image_points_z):
 
 def smoothEyeDetection(new_point, exist_point, initialization_flag, alpha):
     # Smooth the movement of the eye center using exponential moving average.
+    # We perform an exponential smoothing calculation in order to converge quickly when the difference is large,
+    # and converge more slowly when the difference is small.
     if exist_point is None:
         return new_point
     if initialization_flag:
@@ -70,10 +79,11 @@ def identify(center_initialization_flag, initialization_flag,
              initial_rvec=None, previous_iris_center=None,
              previous_eye_point_center=None, screen=None):
 
-    # Detect face and eyes using MediaPipe and return relevant pose and gaze data.
+    # enable to open the camera
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
+            print("Can't receive frame")
             break
 
         # Flip and resize the frame for better eye resolution
@@ -83,7 +93,7 @@ def identify(center_initialization_flag, initialization_flag,
         # Run FaceMesh detection
         results = face_mesh.process(frame)
         if not results.multi_face_landmarks:
-            print("can't identify face")
+            print("Can't identify face")
             continue
 
         for face_landmarks in results.multi_face_landmarks:
@@ -167,7 +177,12 @@ def identify(center_initialization_flag, initialization_flag,
             # Crop eye region
             smaller_frame = cv2.resize(frame, (1280, 720), interpolation=cv2.INTER_AREA)
             eye = (int(image_points[2][0]), int(image_points[2][1]))
-            eye_frame = frame[eye[1] - 100: eye[1] + 100, eye[0] - 100: eye[0] + 300]
+            try:
+                eye_frame = frame[eye[1] - 100: eye[1] + 100, eye[0] - 100: eye[0] + 300]
+            except Exception as e:
+                print("Eye frame crop failed:", e)
+                continue
+
             cv2.putText(eye_frame, f"{int(pitch*1000)} ,{int(yaw*1000)} ,{int(roll*1000)}", (2, 30),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2, cv2.LINE_AA)
 
@@ -183,15 +198,15 @@ if __name__ == "__main__":
     cv2.waitKey(3000)
 
     # Initial detection
-    data = identify(True, True)
-    cv2.imshow('initial', data[1])
+    smaller_frame, eye_frame, object_points, relative_iris_center, rvec, iris_center, eye_point_center, _ = identify(True, True)
+    cv2.imshow('initial', eye_frame)
 
     # Second pass (for pose stabilization)
-    data = identify(False, False, *data[2:])
-    cv2.imshow('initial2', data[1])
+    smaller_frame, eye_frame, object_points, relative_iris_center, rvec, iris_center, eye_point_center, _ = identify(False, False, object_points,relative_iris_center,rvec, iris_center,eye_point_center)
+    cv2.imshow('initial2', eye_frame)
 
     while True:
-        data = identify(False, False, *data[2:])
-        cv2.imshow('frame', data[0])
-        cv2.imshow('eye_frame', data[1])
+        smaller_frame, eye_frame, object_points, relative_iris_center, rvec, iris_center, eye_point_center, _ = identify(False, False, object_points,relative_iris_center,rvec, iris_center,eye_point_center)
+        cv2.imshow('frame', smaller_frame)
+        cv2.imshow('eye_frame', eye_frame)
         cv2.waitKey(100)

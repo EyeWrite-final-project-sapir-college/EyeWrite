@@ -18,7 +18,7 @@ app = QApplication(sys.argv)
 
 # Prompt the user to select which keyboard mode to use
 print("Which mode do you want to run?")
-mode = input("Press 'F' to use the full keyboard, or any other key to demo keyboard: ").strip().lower()
+mode = input("Press 'F' to use the full keyboard, or any other key to demo keyboard: ").strip()
 
 
 # Function to run the Qt event loop in a separate thread
@@ -36,7 +36,7 @@ while True:
             width, height)
 
         # Load the selected keyboard interface
-        if mode == "f":
+        if mode == "f" or mode == "F":
             window = StartMenu.MenuContainer(width, height)  # Full keyboard
         else:
             window = Demo.Ten_buttons(width, height)  # Demo keyboard
@@ -84,7 +84,12 @@ while True:
         center = (int(transformed_point[0][0][0]), int(transformed_point[0][0][1]))
 
         # Update the keyboard GUI with the new cursor position
-        window.update_cursor_position(center)
+        try:
+            window.update_cursor_position(center)
+        except Exception as e:
+            print("GUI update failed:", e)
+            continue
+
 
     # Check for ESC key to exit
     if keyboard.is_pressed("esc"):
